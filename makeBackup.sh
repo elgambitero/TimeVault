@@ -225,36 +225,36 @@ $ECHO "gvJaime's back up utility. Select an option to continue:";
 OPTIONS="\"Generate sha512 sums for backup\" \"Transfer backup tree\" \"Detect renames and relocations\" \"Make backup\" \"Perform a complete cycle\" \"Perform cycle without checksums\" \"Quit\"";
 eval set $OPTIONS;
 select opt in "$@"; do
-    if [ "$opt" = "Generate sha512 sums for backup" ]; then
-	
-	getShaSums;
-	
-    elif [ "$opt" = "Transfer backup tree" ]; then
-
-	transferTree;
-
-    elif [ "$opt" = "Detect renames and relocations" ]; then
-
-	updateTree;
-	
-    elif [ "$opt" = "Make backup" ]; then
-
-	doTheBackup;
-	
-    elif [ "$opt" = "Quit" ]; then
-	$ECHO "Exiting..."
-	exit;
-    elif [ "$opt" = "Perform a complete cycle" ]; then
-	getShaSums;
-	transferTree;
-	updateTree;
-	doTheBackup;
-	exit;
-    elif [ "$opt" = "Perform cycle without checksums" ]; then
-	transferTree;
-	updateTree;
-	doTheBackup;
-    else
-	$ECHO "Bad option";
-    fi
+    case "$opt" in
+	"Generate sha512 sums for backup")
+	    getShaSums;
+	    ;;
+	"Transfer backup tree")
+	    transferTree;
+	    ;;
+	"Detect renames and relocations")
+	    updateTree;
+	    ;;
+	"Quit")
+	    $ECHO "Exiting..."
+	    exit;
+	    ;;
+	"Make backup")
+	    doTheBackup;
+	    ;;
+	"Perform a complete cycle")
+	    getShaSums;
+	    transferTree;
+	    updateTree;
+	    doTheBackup;
+	    exit;
+	    ;;
+	"Perform cycle without checksums")
+	    transferTree;
+	    updateTree;
+	    doTheBackup;
+	    ;;
+	*)
+	    $ECHO "Bad option";
+    esac
 done
