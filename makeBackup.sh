@@ -220,7 +220,7 @@ function doTheBackup {
 
 $CLEAR # Clear terminal screen.
 
-$ECHO "gvJaime's back up utility. Select an option to continue:";
+PS3="gvJaime's back up utility. Select an option to continue:";
 
 OPTIONS="\"Generate sha512 sums for backup\" \"Transfer backup tree\" \"Detect renames and relocations\" \"Make backup\" \"Perform a complete cycle\" \"Perform cycle without checksums\" \"Quit\"";
 eval set $OPTIONS;
