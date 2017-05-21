@@ -77,7 +77,8 @@ SOURCE_FOLDER=$1; # INSERT THE FOLDER YOU WANT TO BACKUP HERE
 BACKUP_FOLDER="$( cd "$( $DIRNAME "${BASH_SOURCE[0]}" )" && pwd )";
 EXCLUDES=$BACKUP_FOLDER/backup_exclude;
 
-PREVIOUS_BACKUP="$BACKUP_FOLDER/$($FIND -name $backupPattern | $TAIL -n -1)";
+PRV="$BACKUP_FOLDER/$($FIND -name $backupPattern | $TAIL -n -1)";
+PREVIOUS_BACKUP=${PRV#$($ECHO "./")}
 PREVIOUS_CONTENTS=$PREVIOUS_BACKUP/Contents;
 
 NEXT_BACKUP=$BACKUP_FOLDER/$($DATE +%Y%m%d_%H%M);
@@ -113,8 +114,8 @@ function prevCheck {
 
 	# Create a excludes file in case there is none
 
-	if [ ! -z $EXCLUDES ]; then
-		{ $ECHO "backup_excludes file not found, creating...";
+	if [ ! -e $EXCLUDES ]; then
+		{ $ECHO "backup_excludes file not found in $EXCLUDES, creating...";
 		$TOUCH $EXCLUDES; }
 	fi
 }
@@ -138,7 +139,7 @@ function transferTree {
 
 	if [ ! -e "$NEW_LOCATIONS" ]; then
 	    $ECHO "You have to generate the SHA512 sum filelist first!"
-	    exit;
+            return;
 	fi
 
 	# Make hardlinked copy of previous backup.
@@ -152,6 +153,11 @@ function transferTree {
 
 function updateTree {
 
+	if [ ! -e "$NEXT_CONTENTS" ]; then
+	    $ECHO "You have to transfer the tree first!"
+	    return;
+	fi
+
 	# If some file has been renamed, rename the hardlink to the new location
 	# before performing rsync.
 
@@ -161,10 +167,10 @@ function updateTree {
 	while read p; do
 	    
 	    SHA=$($CUT -f1 -d " " <<< $p); # SHA contains the SHA signature of current new file.
+
 	    # NEW_LOC contains a list of new locations for this file.
-	    # NEW_LOC=$($ECHO $($GREP -q "$SHA" $NEW_LOCATIONS)); 
 	    NEW_LOC=${p#$($ECHO $SHA"  ")}; # NEW_LOC contains the location of the file.
-	    # $($CUT -f3 -d " " <<< $p);
+
 	    # OLD_LOC contains a list of old locations for this file.
 	    OLD_LOC=$($ECHO "$($GREP "$SHA" $OLD_LOCATIONS)"); 
 
@@ -188,11 +194,11 @@ function updateTree {
 	    # If the link is already done, it will overwrite, but this won't matter
 	    # Because it is the exact same file.
 	    while read -r line; do
-		$ECHO "$line";
+		#$ECHO "$line";
 		PREVIOUS_LOC=${line#$($ECHO $SHA"  ")};
-		$MKDIR -p "$NEXT_CONTENTS/$($DIRNAME $NEW_LOC)";
-	        $CP -al "$PREVIOUS_CONTENTS/${PREVIOUS_LOC#$($ECHO ".")}" "$NEXT_CONTENTS/${NEW_LOC#$($ECHO ".")}";
-		$ECHO "Moving $PREVIOUS_CONTENTS/${PREVIOUS_LOC#$($ECHO ".")} to $NEXT_CONTENTS/${NEW_LOC#$($ECHO ".")}"
+		$MKDIR -p "$NEXT_CONTENTS/$($DIRNAME "$NEW_LOC")";
+	        $CP -al "$PREVIOUS_CONTENTS/${PREVIOUS_LOC#$($ECHO "./")}" "$NEXT_CONTENTS/${NEW_LOC#$($ECHO "./")}";
+		# $ECHO "Moving $PREVIOUS_CONTENTS/${PREVIOUS_LOC#$($ECHO "./")} to $NEXT_CONTENTS/${NEW_LOC#$($ECHO "./")}"
 	    done <<< "$OLD_LOC"
 	done <$NEW_LOCATIONS
 
