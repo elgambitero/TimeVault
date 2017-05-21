@@ -60,6 +60,12 @@ SED=/bin/sed;
 CLEAR=/bin/clear;
 
 #-----------------------------------------------------------------------
+# ------------- filename pattern for backup folders -------------------
+#-----------------------------------------------------------------------
+
+backupPattern="[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]_[0-9][0-9][0-9][0-9]"
+
+#-----------------------------------------------------------------------
 # ------------- file locations ----------------------------------------
 #-----------------------------------------------------------------------
 
@@ -88,23 +94,31 @@ OLD_LOCATIONS=$PREVIOUS_BACKUP/fileindex.txt
 
 # -------------- Previous Checks ---------------------------------------
 
-# Make sure we're running as root
-if (( `$ID -u` != 0 )); then
-    { $ECHO "Sorry, must be root.  Exiting..."; exit; }
+function prevCheck {
+	# Make sure we're running as root
+	if (( `$ID -u` != 0 )); then
+		{ $ECHO "Sorry, must be root.  Exiting..."; exit; }
+	fi
+
+	# Check if the user has specified the folder to backup
+	if [ -z "$1" ]; then
+		$ECHO "Sorry, you must specify the folder to backup";
+		exit;
+	fi
+
+	# Make sure the source volume is mounted!!!! TODO
+
+	if [ ! -d $SOURCE_FOLDER ]; then
+		{ $ECHO "Source directory doesn't exist or it is not mounted"; exit; }
+	fi
+
+}
+# Create a excludes file in case there is none
+
+if [ ! -z $EXCLUDES ]; then
+	{ $ECHO "backup_excludes file not found, creating...";
+	$TOUCH $EXCLUDES; }
 fi
-
-# Check if the user has specified the folder to backup
-if [ -z "$1" ]; then
-    $ECHO "Sorry, you must specify the folder to backup";
-    exit;
-fi
-
-# Make sure the source volume is mounted!!!! TODO
-
-if [ ! -d $SOURCE_FOLDER ]; then
-    { $ECHO "Source directory doesn't exist or it is not mounted"; exit; }
-fi
-
 
 #--------------------Functions--------------------------------------------
 
@@ -217,43 +231,48 @@ function doTheBackup {
 
 # -------------Main Menu------------------------------------------------
 
-$CLEAR # Clear terminal screen.
 
-PS3="gvJaime's back up utility. Select an option to continue:";
+function mainMenu {
+	$CLEAR # Clear terminal screen.
 
-OPTIONS="\"Generate sha512 sums for backup\" \"Transfer backup tree\" \"Detect renames and relocations\" \"Make backup\" \"Perform a complete cycle\" \"Perform cycle without checksums\" \"Quit\"";
-eval set $OPTIONS;
-select opt in "$@"; do
-    case "$opt" in
-	"Generate sha512 sums for backup")
-	    getShaSums;
-	    ;;
-	"Transfer backup tree")
-	    transferTree;
-	    ;;
-	"Detect renames and relocations")
-	    updateTree;
-	    ;;
-	"Quit")
-	    $ECHO "Exiting..."
-	    exit;
-	    ;;
-	"Make backup")
-	    doTheBackup;
-	    ;;
-	"Perform a complete cycle")
-	    getShaSums;
-	    transferTree;
-	    updateTree;
-	    doTheBackup;
-	    exit;
-	    ;;
-	"Perform cycle without checksums")
-	    transferTree;
-	    updateTree;
-	    doTheBackup;
-	    ;;
-	*)
-	    $ECHO "Bad option";
-    esac
-done
+	PS3="gvJaime's back up utility. Select an option to continue:";
+
+	OPTIONS="\"Generate sha512 sums for backup\" \"Transfer backup tree\" \"Detect renames and relocations\" \"Make backup\" \"Perform a complete cycle\" \"Perform cycle without checksums\" \"Quit\"";
+	eval set $OPTIONS;
+	select opt in "$@"; do
+		case "$opt" in
+		"Generate sha512 sums for backup")
+			getShaSums;
+			;;
+		"Transfer backup tree")
+			transferTree;
+			;;
+		"Detect renames and relocations")
+			updateTree;
+			;;
+		"Quit")
+			$ECHO "Exiting..."
+			exit;
+			;;
+		"Make backup")
+			doTheBackup;
+			;;
+		"Perform a complete cycle")
+			getShaSums;
+			transferTree;
+			updateTree;
+			doTheBackup;
+			exit;
+			;;
+		"Perform cycle without checksums")
+			transferTree;
+			updateTree;
+			doTheBackup;
+			;;
+		*)
+			$ECHO "Bad option";
+		esac
+	done
+}
+
+mainMenu;
