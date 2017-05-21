@@ -77,8 +77,7 @@ SOURCE_FOLDER=$1; # INSERT THE FOLDER YOU WANT TO BACKUP HERE
 BACKUP_FOLDER="$( cd "$( $DIRNAME "${BASH_SOURCE[0]}" )" && pwd )";
 EXCLUDES=$BACKUP_FOLDER/backup_exclude;
 
-PRV="$BACKUP_FOLDER/$($LS -d */ | $TAIL -n -1)";
-PREVIOUS_BACKUP=${PRV::-1}; #Crop the last '/' from the filename
+PREVIOUS_BACKUP="$BACKUP_FOLDER/$($FIND -name $backupPattern | $TAIL -n -1)";
 PREVIOUS_CONTENTS=$PREVIOUS_BACKUP/Contents;
 
 NEXT_BACKUP=$BACKUP_FOLDER/$($DATE +%Y%m%d_%H%M);
@@ -112,13 +111,13 @@ function prevCheck {
 		{ $ECHO "Source directory doesn't exist or it is not mounted"; exit; }
 	fi
 
-}
-# Create a excludes file in case there is none
+	# Create a excludes file in case there is none
 
-if [ ! -z $EXCLUDES ]; then
-	{ $ECHO "backup_excludes file not found, creating...";
-	$TOUCH $EXCLUDES; }
-fi
+	if [ ! -z $EXCLUDES ]; then
+		{ $ECHO "backup_excludes file not found, creating...";
+		$TOUCH $EXCLUDES; }
+	fi
+}
 
 #--------------------Functions--------------------------------------------
 
@@ -233,7 +232,7 @@ function doTheBackup {
 
 
 function mainMenu {
-	$CLEAR # Clear terminal screen.
+	# $CLEAR # Clear terminal screen.
 
 	PS3="gvJaime's back up utility. Select an option to continue:";
 
@@ -275,4 +274,5 @@ function mainMenu {
 	done
 }
 
+prevCheck $1;
 mainMenu;
