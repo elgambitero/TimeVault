@@ -72,9 +72,9 @@ backupPattern="[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]_[0-9][0-9][0-9][0-9]"
 # This script must be stored on the root of the backup device.
 # It also considers that the device is mounted with rw.
 
-SOURCE_FOLDER=$1; # INSERT THE FOLDER YOU WANT TO BACKUP HERE
+SOURCE_FOLDER="$1"; # INSERT THE FOLDER YOU WANT TO BACKUP HERE
 
-BACKUP_FOLDER="$( cd "$( $DIRNAME "${BASH_SOURCE[0]}" )" && pwd )";
+BACKUP_FOLDER="$2";
 EXCLUDES=$BACKUP_FOLDER/backup_exclude;
 
 PRV="$BACKUP_FOLDER/$($FIND -name $backupPattern | $TAIL -n -1)";
@@ -103,6 +103,12 @@ function prevCheck {
 	# Check if the user has specified the folder to backup
 	if [ -z "$1" ]; then
 		$ECHO "Sorry, you must specify the folder to backup";
+		exit;
+	fi
+
+	# Check if the user has specified the folder to backup
+	if [ -z "$2" ]; then
+		$ECHO "Sorry, you must specify the folder to make the backup into";
 		exit;
 	fi
 
