@@ -35,7 +35,7 @@ unset PATH
 #-----------------------------------------------------------------------
 
 PWD=/bin/pwd;
-$DF=/bin/df;
+DF=/bin/df;
 ID=/usr/bin/id;
 ECHO=/bin/echo;
 MOUNT=/bin/mount;
@@ -130,8 +130,8 @@ function prevCheck {
 
 function startUp {
 
-    PRV="$FIND $BACKUP_FOLDER -name $backupPattern | $TAIL -n -$FINDINDEX";    
-    if [ $PRV == "" ]; then
+    PRV="$($FIND "$BACKUP_FOLDER" -name "$backupPattern" | $TAIL -n -$FINDINDEX)";
+    if [ "$PRV" = "" ]; then
 	PREVIOUS_BACKUP=$PRV;
 	PREVIOUS_CONTENTS=$PRV;
 	OLD_LOCATIONS="";
@@ -141,20 +141,20 @@ function startUp {
 	NEW_LOCATIONS=$BACKUP_FOLDER/fileindex.txt;	
 	this_is_the_first=true;
     else
-	PREVIOUS_BACKUP=${PRV#$($ECHO "$BACKUP_FOLDER")};
+	PREVIOUS_BACKUP=$PRV;
 	PREVIOUS_CONTENTS=$PREVIOUS_BACKUP/Contents;
 	OLD_LOCATIONS=$PREVIOUS_BACKUP/fileindex.txt;
 	NEXT_BACKUP=$BACKUP_FOLDER/$($DATE +%Y%m%d_%H%M);
 	NEXT_CONTENTS=$NEXT_BACKUP/Contents;
 	NEW_LOCATIONS=$BACKUP_FOLDER/fileindex.txt;
-	if [ !-e $PREVIOUS_BACKUP/fileindex.txt ]; then
+	if [ ! -e "$PREVIOUS_BACKUP/fileindex.txt" ]; then
 	    $ECHO "Previous backup $PREVIOUS_BACKUP wasn't performed. Marking as error...";
 	    $ECHO "You are free to delete that snapshot when you feel safe";
-	    $MV "$BACKUP_FOLDER/$PREVIOUS_BACKUP" "$BACKUP_FOLDER"/"ERROR""$PREVIOUS_BACKUP";
-	    FINDINDEX=$FINDINDEX + 1;
+	    $MV "$PREVIOUS_BACKUP" "$BACKUP_FOLDER"/"ERROR""${PRV#$($ECHO "$BACKUP_FOLDER")}";
+	    FINDINDEX=$(($FINDINDEX + 1));
 	    startUp;
 	else
-	    PREVIOUS_BACKUP=${PRV#$($ECHO "$BACKUP_FOLDER")};
+	    PREVIOUS_BACKUP=$PRV;
 	    PREVIOUS_CONTENTS=$PREVIOUS_BACKUP/Contents;
 	    OLD_LOCATIONS=$PREVIOUS_BACKUP/fileindex.txt;
 	    NEXT_BACKUP=$PREVIOUS_BACKUP;
@@ -162,13 +162,7 @@ function startUp {
 	    NEW_LOCATIONS=$BACKUP_FOLDER/fileindex.txt;
 	fi
 	this_is_the_first=false;
-
     fi 
-
-
-    
-
-
 }
 
 
@@ -176,26 +170,35 @@ function getShaSums {
     $ECHO "Get SHA512sums for the new directory...";
     # Search all the files in the new tree, get their SHA512 sums,
     # and get them into the NEW_LOCATIONS file.
-    $FIND "$SOURCE_FOLDER"-type f -exec $ECHO -n '"{}" ' \; | $TR '\n' ' ' | $XARGS $SHA512 | $GREP -vf $EXCLUDES > $NEW_LOCATIONS;
+    $FIND "$SOURCE_FOLDER" -type f -exec $ECHO -n '"{}" ' \; | $TR '\n' ' ' | $XARGS $SHA512 | $GREP -vf $EXCLUDES > $NEW_LOCATIONS;
 }
 
 function transferTree {
 
-	if [ ! -e "$NEW_LOCATIONS" ]; then
-	    $ECHO "You have to generate the SHA512 sum filelist first!"
-            return;
-	fi
+    if [ "$this_is_the_first" = true ]; then
+	$ECHO "This is your first backup, you don't have a previous tree to transfer from."
+	return;
+    fi
+    
+    if [ ! -e "$NEW_LOCATIONS" ]; then
+	$ECHO "You have to generate the SHA512 sum filelist first!"
+        return;
+    fi
 
-	# Make hardlinked copy of previous backup.
+    # Make hardlinked copy of previous backup.
 
-	$ECHO "Making hardlinked copy of previous backup";
+    $ECHO "Making hardlinked copy of previous backup";
 	
-	$MKDIR -p $NEXT_CONTENTS
-	$CP -al $PREVIOUS_CONTENTS/* $NEXT_CONTENTS/;
+    $MKDIR -p $NEXT_CONTENTS
+    $CP -al "$PREVIOUS_CONTENTS/*" "$NEXT_CONTENTS/";
     
 }
 
 function updateTree {
+
+    if [ "$this_is_the_first" = true ]; then
+	return;
+    fi
 
 	if [ ! -e "$NEXT_CONTENTS" ]; then
 	    $ECHO "You have to transfer the tree first!"
@@ -255,6 +258,10 @@ function doTheBackup {
 	
 	# Sync the folders.
 
+	if [ "$this_is_the_first" = true ]; then
+		$MKDIR -p $NEXT_CONTENTS;
+	fi
+	
 	$ECHO "Calling rsync..."
 
 	$RSYNC								\
