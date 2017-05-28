@@ -34,32 +34,62 @@ unset PATH
 # ------------- system commands used by this script -------------------
 #-----------------------------------------------------------------------
 
-PWD=/bin/pwd;
-DF=/bin/df;
-ID=/usr/bin/id;
-ECHO=/bin/echo;
-MOUNT=/bin/mount;
-RM=/bin/rm;
-MV=/bin/mv;
-CP=/bin/cp;
-TOUCH=/bin/touch;
-LS=/bin/ls;
-TAIL=/bin/tail;
-SORT=/bin/sort;
-DIRNAME=/bin/dirname;
-SED=/bin/sed;
-DATE=/bin/date;
-RSYNC=/usr/bin/rsync;
-CHMOD=/bin/chmod;
-MKDIR=/bin/mkdir;
-FIND=/bin/find;
-XARGS=/bin/xargs;
-SHA512=/bin/sha512sum;
+COMMANDS=(
+PWD=/bin/pwd
+DF=/bin/df
+ID=/usr/bin/id
+ECHO=/bin/echo
+MOUNT=/bin/mount
+RM=/bin/rm
+MV=/bin/mv
+CP=/bin/cp
+TOUCH=/bin/touch
+TYPE=/bin/type
+LS=/bin/ls
+TAIL=/bin/tail
+SORT=/bin/sort
+DIRNAME=/bin/dirname
+SED=/bin/sed
+DATE=/bin/date
+RSYNC=/usr/bin/rsync
+CHMOD=/bin/chmod
+MKDIR=/bin/mkdir
+FIND=/bin/find
+XARGS=/bin/xargs
+SHA512=/bin/sha512sum
 TR=/bin/tr
-GREP=/bin/grep;
-CUT=/bin/cut;
-SED=/bin/sed;
-CLEAR=/bin/clear;
+GREP=/bin/grep
+CUT=/bin/cut
+SED=/bin/sed
+CLEAR=/bin/clear
+)
+
+eval ${COMMANDS[*]};
+
+# Check if every command is installed before continuing.
+# If a command is not installed, it will try to find it.
+# This check won't work if the commands echo, cut, type
+# and tail aren't available. 
+# But, what are the odds? am I right?
+
+for i in ${COMMANDS[*]}; do
+    VARIABLE=$($ECHO $i | $CUT -f1 -d "=");
+    CMDLOCATION=$($ECHO ${i##*=});
+    if [ ! -e $CMDLOCATION ]; then
+        COMMAND="$($ECHO ${i##*/})";
+        TYPEOUTPUT=$($TYPE -a "$COMMAND" | $TAIL -n1);
+        $TYPE -a "$COMMAND" &> /dev/null;
+        TYPERESULT=$?;
+        if [ $TYPERESULT -ne 0 ]; then
+            $ECHO "Command $COMMAND not found in it's expected location $LOCATION.";
+            $ECHO "TimeVault tried to find it, but couldn't, so it is possible that it is not installed";
+            exit;
+        else
+            REASSIGN="$($ECHO $i | $CUT -f1 -d "=")""=""$($ECHO ${TYPEOUTPUT##* })";
+            eval $REASSIGN;
+        fi
+    fi
+done 
 
 #-----------------------------------------------------------------------
 # ------------- filename pattern for backup folders -------------------
@@ -154,6 +184,9 @@ function startUp {
 	    $ECHO "Previous backup $PREVIOUS_BACKUP wasn't performed. Marking as error...";
 	    $ECHO "You are free to delete that snapshot when you feel safe";
 	    $MV "$PREVIOUS_BACKUP" "$BACKUP_FOLDER"/"ERROR""${PRV#$($ECHO "$BACKUP_FOLDER")}";
+            if [ -e $NEW_LOCATIONS]; then
+                $RM "$NEW_LOCATIONS" &> /dev/null;
+            fi
 	    FINDINDEX=$(($FINDINDEX + 1));
 	    startUp;
 	else
