@@ -44,7 +44,6 @@ RM=/bin/rm
 MV=/bin/mv
 CP=/bin/cp
 TOUCH=/bin/touch
-TYPE=/bin/type
 LS=/bin/ls
 TAIL=/bin/tail
 SORT=/bin/sort
@@ -77,8 +76,8 @@ for i in ${COMMANDS[*]}; do
     CMDLOCATION=$($ECHO ${i##*=});
     if [ ! -e $CMDLOCATION ]; then
         COMMAND="$($ECHO ${i##*/})";
-        TYPEOUTPUT=$($TYPE -a "$COMMAND" | $TAIL -n1);
-        $TYPE -a "$COMMAND" &> /dev/null;
+        TYPEOUTPUT=$(type -a "$COMMAND" | $TAIL -n1);
+        type -a "$COMMAND" &> /dev/null;
         TYPERESULT=$?;
         if [ $TYPERESULT -ne 0 ]; then
             $ECHO "Command $COMMAND not found in it's expected location $LOCATION.";
