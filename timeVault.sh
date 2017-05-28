@@ -76,11 +76,11 @@ for i in ${COMMANDS[*]}; do
     CMDLOCATION=$($ECHO ${i##*=});
     if [ ! -e $CMDLOCATION ]; then
         COMMAND="$($ECHO ${i##*/})";
-        TYPEOUTPUT=$(type -a "$COMMAND" | $TAIL -n1);
+        TYPEOUTPUT=$(type -a "$COMMAND" 2>&1 | $TAIL -n1);
         type -a "$COMMAND" &> /dev/null;
         TYPERESULT=$?;
         if [ $TYPERESULT -ne 0 ]; then
-            $ECHO "Command $COMMAND not found in it's expected location $LOCATION.";
+            $ECHO "Command $COMMAND not found in it's expected location $CMDLOCATION.";
             $ECHO "TimeVault tried to find it, but couldn't, so it is possible that it is not installed";
             exit;
         else
