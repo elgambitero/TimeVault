@@ -45,6 +45,7 @@ CP=/bin/cp;
 TOUCH=/bin/touch;
 LS=/bin/ls;
 TAIL=/bin/tail;
+SORT=/bin/sort;
 DIRNAME=/bin/dirname;
 SED=/bin/sed;
 DATE=/bin/date;
@@ -130,7 +131,7 @@ function prevCheck {
 
 function startUp {
 
-    PRV="$($FIND "$BACKUP_FOLDER" -name "$backupPattern" | $TAIL -n -$FINDINDEX)";
+    PRV="$($FIND "$BACKUP_FOLDER" -name "$backupPattern" | $SORT | $TAIL -n -$FINDINDEX)";
     if [ "$PRV" = "" ]; then
 	PREVIOUS_BACKUP=$PRV;
 	PREVIOUS_CONTENTS=$PRV;
@@ -144,9 +145,11 @@ function startUp {
 	PREVIOUS_BACKUP=$PRV;
 	PREVIOUS_CONTENTS=$PREVIOUS_BACKUP/Contents;
 	OLD_LOCATIONS=$PREVIOUS_BACKUP/fileindex.txt;
+
 	NEXT_BACKUP=$BACKUP_FOLDER/$($DATE +%Y%m%d_%H%M);
 	NEXT_CONTENTS=$NEXT_BACKUP/Contents;
 	NEW_LOCATIONS=$BACKUP_FOLDER/fileindex.txt;
+	
 	if [ ! -e "$PREVIOUS_BACKUP/fileindex.txt" ]; then
 	    $ECHO "Previous backup $PREVIOUS_BACKUP wasn't performed. Marking as error...";
 	    $ECHO "You are free to delete that snapshot when you feel safe";
@@ -157,9 +160,6 @@ function startUp {
 	    PREVIOUS_BACKUP=$PRV;
 	    PREVIOUS_CONTENTS=$PREVIOUS_BACKUP/Contents;
 	    OLD_LOCATIONS=$PREVIOUS_BACKUP/fileindex.txt;
-	    NEXT_BACKUP=$PREVIOUS_BACKUP;
-	    NEXT_CONTENTS=$PREVIOUS_CONTENTS;
-	    NEW_LOCATIONS=$BACKUP_FOLDER/fileindex.txt;
 	fi
 	this_is_the_first=false;
     fi 
@@ -187,10 +187,10 @@ function transferTree {
 
     # Make hardlinked copy of previous backup.
 
-    $ECHO "Making hardlinked copy of previous backup";
+    $ECHO "Making hardlinked copy of previous backup into $NEXT_CONTENTS";
 	
     $MKDIR -p $NEXT_CONTENTS
-    $CP -al "$PREVIOUS_CONTENTS/*" "$NEXT_CONTENTS/";
+    $CP -al "$PREVIOUS_CONTENTS/"* "$NEXT_CONTENTS/";
     
 }
 
