@@ -35,6 +35,7 @@ unset PATH
 #-----------------------------------------------------------------------
 
 PWD=/bin/pwd;
+$DF=/bin/df;
 ID=/usr/bin/id;
 ECHO=/bin/echo;
 MOUNT=/bin/mount;
@@ -73,19 +74,10 @@ backupPattern="[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]_[0-9][0-9][0-9][0-9]"
 # It also considers that the device is mounted with rw.
 
 SOURCE_FOLDER="$1"; # INSERT THE FOLDER YOU WANT TO BACKUP HERE
-
 BACKUP_FOLDER="$2";
 EXCLUDES=$BACKUP_FOLDER/backup_exclude;
+FINDINDEX=1;
 
-PRV="$BACKUP_FOLDER/$($FIND -name $backupPattern | $TAIL -n -1)";
-PREVIOUS_BACKUP=${PRV#$($ECHO "./")}
-PREVIOUS_CONTENTS=$PREVIOUS_BACKUP/Contents;
-
-NEXT_BACKUP=$BACKUP_FOLDER/$($DATE +%Y%m%d_%H%M);
-NEXT_CONTENTS=$NEXT_BACKUP/Contents;
-
-NEW_LOCATIONS=$BACKUP_FOLDER/fileindex.txt
-OLD_LOCATIONS=$PREVIOUS_BACKUP/fileindex.txt
 
 #-----------------------------------------------------------------------
 # ------------ The Script ---------------------------------------------
@@ -97,19 +89,27 @@ OLD_LOCATIONS=$PREVIOUS_BACKUP/fileindex.txt
 function prevCheck {
 	# Make sure we're running as root
 	if (( `$ID -u` != 0 )); then
-		{ $ECHO "Sorry, must be root.  Exiting..."; exit; }
+		{ $ECHO "This scripts must be run as root.  Exiting..."; exit; }
 	fi
 
 	# Check if the user has specified the folder to backup
 	if [ -z "$1" ]; then
-		$ECHO "Sorry, you must specify the folder to backup";
-		exit;
+	    $ECHO "You must specify the folder to backup";
+	    $ECHO "Syntax is: makeBackup.sh <source folder> <destination folder>"
+	    exit;
 	fi
 
 	# Check if the user has specified the folder to backup
 	if [ -z "$2" ]; then
-		$ECHO "Sorry, you must specify the folder to make the backup into";
-		exit;
+	    $ECHO "You must specify the folder to make the backup into";
+	    $ECHO "Syntax is: makeBackup.sh <source folder> <destination folder>"
+	    exit;
+	fi
+
+	# Check if the destination directory is contained in a ext4 filesystem
+	if [ "$($DF -T "$BACKUP_FOLDER" | $GREP "ext4")" == "" ]; then
+	    $ECHO "The destination folder must be contained into a ext4 filesystem";
+	    exit;
 	fi
 
 	# Make sure the source volume is mounted!!!! TODO
@@ -128,17 +128,55 @@ function prevCheck {
 
 #--------------------Functions--------------------------------------------
 
+function startUp {
+
+    PRV="$FIND $BACKUP_FOLDER -name $backupPattern | $TAIL -n -$FINDINDEX";    
+    if [ $PRV == "" ]; then
+	PREVIOUS_BACKUP=$PRV;
+	PREVIOUS_CONTENTS=$PRV;
+	OLD_LOCATIONS="";
+	$ECHO "No previous backup found. Assuming this is your first backup.";
+	NEXT_BACKUP=$BACKUP_FOLDER/$($DATE +%Y%m%d_%H%M);
+	NEXT_CONTENTS=$NEXT_BACKUP/Contents;
+	NEW_LOCATIONS=$BACKUP_FOLDER/fileindex.txt;	
+	this_is_the_first=true;
+    else
+	PREVIOUS_BACKUP=${PRV#$($ECHO "$BACKUP_FOLDER")};
+	PREVIOUS_CONTENTS=$PREVIOUS_BACKUP/Contents;
+	OLD_LOCATIONS=$PREVIOUS_BACKUP/fileindex.txt;
+	NEXT_BACKUP=$BACKUP_FOLDER/$($DATE +%Y%m%d_%H%M);
+	NEXT_CONTENTS=$NEXT_BACKUP/Contents;
+	NEW_LOCATIONS=$BACKUP_FOLDER/fileindex.txt;
+	if [ !-e $PREVIOUS_BACKUP/fileindex.txt ]; then
+	    $ECHO "Previous backup $PREVIOUS_BACKUP wasn't performed. Marking as error...";
+	    $ECHO "You are free to delete that snapshot when you feel safe";
+	    $MV "$BACKUP_FOLDER/$PREVIOUS_BACKUP" "$BACKUP_FOLDER"/"ERROR""$PREVIOUS_BACKUP";
+	    FINDINDEX=$FINDINDEX + 1;
+	    startUp;
+	else
+	    PREVIOUS_BACKUP=${PRV#$($ECHO "$BACKUP_FOLDER")};
+	    PREVIOUS_CONTENTS=$PREVIOUS_BACKUP/Contents;
+	    OLD_LOCATIONS=$PREVIOUS_BACKUP/fileindex.txt;
+	    NEXT_BACKUP=$PREVIOUS_BACKUP;
+	    NEXT_CONTENTS=$PREVIOUS_CONTENTS;
+	    NEW_LOCATIONS=$BACKUP_FOLDER/fileindex.txt;
+	fi
+	this_is_the_first=false;
+
+    fi 
+
+
+    
+
+
+}
+
 
 function getShaSums {
-    
-	$ECHO "Get SHA512sums for the new directory...";
-
-	# Search all the files in the new tree, get their SHA512 sums,
-	# and get them into the NEW_LOCATIONS file.
-        cd "$SOURCE_FOLDER";
-	$FIND -type f -exec $ECHO -n '"{}" ' \; | $TR '\n' ' ' | $XARGS $SHA512 | $GREP -vf $EXCLUDES > $NEW_LOCATIONS;
-	cd "$BACKUP_FOLDER";
-	
+    $ECHO "Get SHA512sums for the new directory...";
+    # Search all the files in the new tree, get their SHA512 sums,
+    # and get them into the NEW_LOCATIONS file.
+    $FIND "$SOURCE_FOLDER"-type f -exec $ECHO -n '"{}" ' \; | $TR '\n' ' ' | $XARGS $SHA512 | $GREP -vf $EXCLUDES > $NEW_LOCATIONS;
 }
 
 function transferTree {
@@ -248,7 +286,7 @@ function mainMenu {
 
 	PS3="gvJaime's back up utility. Select an option to continue:";
 
-	OPTIONS="\"Generate sha512 sums for backup\" \"Transfer backup tree\" \"Detect renames and relocations\" \"Make backup\" \"Perform a complete cycle\" \"Perform cycle without checksums\" \"Quit\"";
+	OPTIONS="\"Generate sha512 sums for backup\" \"Transfer backup tree\" \"Make backup\" \"Perform a complete cycle\" \"Perform cycle without checksums\" \"Quit\"";
 	eval set $OPTIONS;
 	select opt in "$@"; do
 		case "$opt" in
@@ -256,10 +294,8 @@ function mainMenu {
 			getShaSums;
 			;;
 		"Transfer backup tree")
-			transferTree;
-			;;
-		"Detect renames and relocations")
-			updateTree;
+		    transferTree;
+		    updateTree;
 			;;
 		"Quit")
 			$ECHO "Exiting..."
@@ -286,5 +322,6 @@ function mainMenu {
 	done
 }
 
-prevCheck $1;
+prevCheck $1 $2;
+startUp;
 mainMenu;
