@@ -103,8 +103,8 @@ backupPattern="[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]_[0-9][0-9][0-9][0-9]"
 # This script must be stored on the root of the backup device.
 # It also considers that the device is mounted with rw.
 
-SOURCE_FOLDER="$1"; # INSERT THE FOLDER YOU WANT TO BACKUP HERE
-BACKUP_FOLDER="$2";
+SOURCE_FOLDER="$1""/"; 
+BACKUP_FOLDER="$2""/";
 EXCLUDES=$BACKUP_FOLDER/backup_exclude;
 FINDINDEX=1;
 
@@ -183,7 +183,7 @@ function startUp {
 	    $ECHO "Previous backup $PREVIOUS_BACKUP wasn't performed. Marking as error...";
 	    $ECHO "You are free to delete that snapshot when you feel safe";
 	    $MV "$PREVIOUS_BACKUP" "$BACKUP_FOLDER"/"ERROR""${PRV#$($ECHO "$BACKUP_FOLDER")}";
-            if [ -e $NEW_LOCATIONS]; then
+            if [ -e $NEW_LOCATIONS ]; then
                 $RM "$NEW_LOCATIONS" &> /dev/null;
             fi
 	    FINDINDEX=$(($FINDINDEX + 1));
