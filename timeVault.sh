@@ -103,8 +103,8 @@ backupPattern="[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]_[0-9][0-9][0-9][0-9]"
 # This script must be stored on the root of the backup device.
 # It also considers that the device is mounted with rw.
 
-SOURCE_FOLDER="$1""/"; 
-BACKUP_FOLDER="$2""/";
+SOURCE_FOLDER="${1%/}"; 
+BACKUP_FOLDER="${2%/}";
 EXCLUDES=$BACKUP_FOLDER/backup_exclude;
 FINDINDEX=1;
 
@@ -162,8 +162,8 @@ function startUp {
 
     PRV="$($FIND "$BACKUP_FOLDER" -name "$backupPattern" | $SORT | $TAIL -n -$FINDINDEX)";
     if [ "$PRV" = "" ]; then
-	PREVIOUS_BACKUP=$PRV;
-	PREVIOUS_CONTENTS=$PRV;
+	PREVIOUS_BACKUP=${PRV%/};
+	PREVIOUS_CONTENTS=${PRV/};
 	OLD_LOCATIONS="";
 	$ECHO "No previous backup found. Assuming this is your first backup.";
 	NEXT_BACKUP=$BACKUP_FOLDER/$($DATE +%Y%m%d_%H%M);
@@ -182,7 +182,7 @@ function startUp {
 	if [ ! -e "$PREVIOUS_BACKUP/fileindex.txt" ]; then
 	    $ECHO "Previous backup $PREVIOUS_BACKUP wasn't performed. Marking as error...";
 	    $ECHO "You are free to delete that snapshot when you feel safe";
-	    $MV "$PREVIOUS_BACKUP" "$BACKUP_FOLDER"/"ERROR""${PRV#$($ECHO "$BACKUP_FOLDER")}";
+	    $MV "$PREVIOUS_BACKUP" "$BACKUP_FOLDER"/"ERROR""${PRV#$($ECHO "$BACKUP_FOLDER""/")}";
             if [ -e $NEW_LOCATIONS ]; then
                 $RM "$NEW_LOCATIONS" &> /dev/null;
             fi
@@ -222,7 +222,7 @@ function transferTree {
     $ECHO "Making hardlinked copy of previous backup into $NEXT_CONTENTS";
 	
     $MKDIR -p $NEXT_CONTENTS
-    $CP -al "$PREVIOUS_CONTENTS/"* "$NEXT_CONTENTS/";
+    $CP -al "${PREVIOUS_CONTENTS%/}/"* "${NEXT_CONTENTS%/}/";
     
 }
 
@@ -247,11 +247,11 @@ function updateTree {
 	    
 	    SHA=$($CUT -f1 -d " " <<< $p); # SHA contains the SHA signature of current new file.
 
-	    # NEW_LOC contains a list of new locations for this file.
-	    NEW_LOC=${p#$($ECHO $SHA"  ")}; # NEW_LOC contains the location of the file.
+            # NEW_LOC contains the location of the file.
+	    NEW_LOC=${p#$($ECHO $SHA"  ")}; 
 
 	    # OLD_LOC contains a list of old locations for this file.
-	    OLD_LOC=$($ECHO "$($GREP "$SHA" $OLD_LOCATIONS)"); 
+	    OLD_LOC=$($ECHO "$($GREP -F "$SHA" $OLD_LOCATIONS)"); 
 
 	    # $ECHO "Reading file $SHA";
 	    # $ECHO "OLD_LOC is .$OLD_LOC.";
@@ -263,7 +263,7 @@ function updateTree {
 
 	    # Look for the new relative location into the old locations.
 	    # If you find that relative location, continue to the next file.
-	    if  $ECHO "$OLD_LOC" | $GREP -q "$NEW_LOC"
+	    if  $ECHO "$OLD_LOC" | $GREP -F -q "$NEW_LOC"
 	    then
 		continue;
 	    fi
@@ -275,9 +275,12 @@ function updateTree {
 	    while read -r line; do
 		#$ECHO "$line";
 		PREVIOUS_LOC=${line#$($ECHO $SHA"  ")};
-		$MKDIR -p "$NEXT_CONTENTS/$($DIRNAME "$NEW_LOC")";
-	        $CP -al "$PREVIOUS_CONTENTS/${PREVIOUS_LOC#$($ECHO "./")}" "$NEXT_CONTENTS/${NEW_LOC#$($ECHO "./")}";
-		# $ECHO "Moving $PREVIOUS_CONTENTS/${PREVIOUS_LOC#$($ECHO "./")} to $NEXT_CONTENTS/${NEW_LOC#$($ECHO "./")}"
+		$MKDIR -p "${NEXT_CONTENTS%/}/$($DIRNAME "${NEW_LOC#$($ECHO "$SOURCE_FOLDER")}")";
+                if [ -e "${PREVIOUS_CONTENTS%/}/${PREVIOUS_LOC#$($ECHO "$SOURCE_FOLDER")}" ]; then
+                  $CP -al "${PREVIOUS_CONTENTS%/}/${PREVIOUS_LOC#$($ECHO "$SOURCE_FOLDER")}" "${NEXT_CONTENTS%/}/${NEW_LOC#$($ECHO "$SOURCE_FOLDER")}";
+                else
+                  $ECHO "New identical file "${PREVIOUS_CONTENTS%/}/${PREVIOUS_LOC#$($ECHO "$SOURCE_FOLDER")}" wasn't copied"
+                fi
 	    done <<< "$OLD_LOC"
 	done <$NEW_LOCATIONS
 
