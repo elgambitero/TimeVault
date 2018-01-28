@@ -71,7 +71,9 @@ eval ${COMMANDS[*]};
 # and tail aren't available. 
 # But, what are the odds? am I right?
 
+
 for i in ${COMMANDS[*]}; do
+    $ECHO "Checking $i...";
     VARIABLE=$($ECHO $i | $CUT -f1 -d "=");
     CMDLOCATION=$($ECHO ${i##*=});
     if [ ! -e $CMDLOCATION ]; then
@@ -88,6 +90,7 @@ for i in ${COMMANDS[*]}; do
             eval $REASSIGN;
         fi
     fi
+    $ECHO "ok";
 done 
 
 #-----------------------------------------------------------------------
@@ -132,7 +135,7 @@ function prevCheck {
 	# Check if the user has specified the folder to backup
 	if [ -z "$2" ]; then
 	    $ECHO "You must specify the folder to make the backup into";
-	    $ECHO "Syntax is: makeBackup.sh <source folder> <destination folder>"
+	    $ECHO "Syntax is: timeVault.sh <source folder> <destination folder>"
 	    exit;
 	fi
 
@@ -159,7 +162,7 @@ function prevCheck {
 #--------------------Functions--------------------------------------------
 
 function startUp {
-
+    $ECHO "Analyzing previous backups checking for integrity..."
     PRV="$($FIND "$BACKUP_FOLDER" -name "$backupPattern" | $SORT | $TAIL -n -$FINDINDEX)";
     if [ "$PRV" = "" ]; then
 	PREVIOUS_BACKUP=${PRV%/};
@@ -256,8 +259,15 @@ function updateTree {
 	    # $ECHO "Reading file $SHA";
 	    # $ECHO "OLD_LOC is .$OLD_LOC.";
 	    
-	    # If this file doesn't exist in the old list, it is a new file, so moving on.
+	    # If this file doesn't exist in the old list, it is a new
+            # file, or has been updated, so try to remove it's hardlink
+            # and let rsync fill it up with the new file later.
 	    if [ -z "$OLD_LOC" ]; then
+		if [ -e "${NEXT_CONTENTS%/}/$NEW_LOC" ]; then
+                    $ECHO "Erasing hardlink of updated file";
+                    $ECHO "${NEXT_CONTENTS%/}/$NEW_LOC";
+                    $RM "${NEXT_CONTENTS%/}/$NEW_LOC";
+                fi
 		continue;
 	    fi
 
@@ -273,7 +283,7 @@ function updateTree {
 	    # If the link is already done, it will overwrite, but this won't matter
 	    # Because it is the exact same file.
 	    while read -r line; do
-		#$ECHO "$line";
+		# $ECHO "$line";
 		PREVIOUS_LOC=${line#$($ECHO $SHA"  ")};
 		$MKDIR -p "${NEXT_CONTENTS%/}/$($DIRNAME "${NEW_LOC#$($ECHO "$SOURCE_FOLDER")}")";
                 if [ -e "${PREVIOUS_CONTENTS%/}/${PREVIOUS_LOC#$($ECHO "$SOURCE_FOLDER")}" ]; then
@@ -301,6 +311,7 @@ function doTheBackup {
 
 	$RSYNC								\
 	    -va --delete --delete-excluded				\
+            --ignore-existing                                           \
 	    --no-inc-recursive --exclude-from="$EXCLUDES"		\
 	    $SOURCE_FOLDER/ $NEXT_CONTENTS/;
 
@@ -328,7 +339,7 @@ function mainMenu {
 
 	PS3="gvJaime's back up utility. Select an option to continue:";
 
-	OPTIONS="\"Generate sha512 sums for backup\" \"Transfer backup tree\" \"Make backup\" \"Perform a complete cycle\" \"Perform cycle without checksums\" \"Quit\"";
+	OPTIONS="\"Generate sha512 sums for backup\" \"Transfer backup tree\" \"Transfer new files\" \"Perform a complete cycle\" \"Perform cycle without checksums\" \"Quit\"";
 	eval set $OPTIONS;
 	select opt in "$@"; do
 		case "$opt" in
@@ -343,7 +354,7 @@ function mainMenu {
 			$ECHO "Exiting..."
 			exit;
 			;;
-		"Make backup")
+		"Transfer new files")
 			doTheBackup;
 			;;
 		"Perform a complete cycle")
