@@ -263,10 +263,10 @@ function updateTree {
             # file, or has been updated, so try to remove it's hardlink
             # and let rsync fill it up with the new file later.
 	    if [ -z "$OLD_LOC" ]; then
-		if [ -e "${NEXT_CONTENTS%/}/$NEW_LOC" ]; then
+		if [ -e "${NEXT_CONTENTS%/}/${NEW_LOC#$($ECHO "$SOURCE_FOLDER")}" ]; then
                     $ECHO "Erasing hardlink of updated file";
-                    $ECHO "${NEXT_CONTENTS%/}/$NEW_LOC";
-                    $RM "${NEXT_CONTENTS%/}/$NEW_LOC";
+                    $ECHO "${NEXT_CONTENTS%/}/${NEW_LOC#$($ECHO "$SOURCE_FOLDER")}";
+                    $RM "${NEXT_CONTENTS%/}/${NEW_LOC#$($ECHO "$SOURCE_FOLDER")}";
                 fi
 		continue;
 	    fi
