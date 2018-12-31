@@ -327,9 +327,9 @@ function doTheBackup {
 
 	$MV $NEW_LOCATIONS $NEXT_BACKUP/fileindex.txt;
 
-	# Put read-only permissions on our new backup
+	# Put read-only and listable permissions on our new backup
 
-	$CHMOD 444 $NEXT_BACKUP;
+	$CHMOD -R 544 $NEXT_BACKUP;
 
 	# Echo an end message because why not.
 
