@@ -103,8 +103,6 @@ backupPattern="[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]_[0-9][0-9][0-9][0-9]"
 # ------------- file locations ----------------------------------------
 #-----------------------------------------------------------------------
 
-# This script must be stored on the root of the backup device.
-# It also considers that the device is mounted with rw.
 
 SOURCE_FOLDER="${1%/}"; 
 BACKUP_FOLDER="${2%/}";
@@ -145,7 +143,13 @@ function prevCheck {
 	    exit;
 	fi
 
-	# Make sure the source volume is mounted!!!! TODO
+	# Check if the destination directory is writable
+	if [ ! -w $BACKUP_FOLDER ]; then
+		$ECHO "The destination folder seems to be read only"; 
+		exit;
+	fi
+
+	# Make sure the source volume is mounted
 
 	if [ ! -d $SOURCE_FOLDER ]; then
 		{ $ECHO "Source directory doesn't exist or it is not mounted"; exit; }
