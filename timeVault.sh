@@ -1,5 +1,7 @@
 # ----------------------------------------------------------------------
 # gvJaime's time capsule-like backup script
+#
+# For more info: https://github.com/gvJaime/TimeVault
 # ----------------------------------------------------------------------
 # Based on Mike Rubel's scripts in
 # www.mikerubel.org/computers/rsync_snapshots
@@ -9,23 +11,23 @@
 # Script Explanation
 # ----------------------------------------------------------------------
 #
-# Scripts that makes incremental backups "a la Time Machine".
+# Script that makes incremental backups "a la Apple's Time Machine".
 # Incremental, with timestamped snapshots.
 #
 # When executed, it creates a folder whose name will be the date of the
-# snapshot. e.g: a the 4th of May of 2017, at 16:20, will generate
+# snapshot. e.g: the 4th of May of 2017, at 16:20, will generate
 # a folder called 20170504_1620. And inside, your contents.
 #
 # BUT WAIT! there's more!
 #
 # The unchanged files are not loaded again. They are hardlinked to the
 # previous snapshot, so the snapshot will look the same, but only the
-# changed files will be there.
+# changed and new files will actually be stored. The rest are linked to
+# your previous snapshot.
 #
-# ----------------------------------------------------------------------
-# NOTES
+# Also, as a consequence of these mechanics, identical files that you may
+# have in your source folder will be stored only once.
 #
-# OPTIMIZE BACKUPS BY HARDLINKING IDENTICAL FILES
 # ----------------------------------------------------------------------
 
 unset PATH
