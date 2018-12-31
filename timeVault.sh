@@ -120,7 +120,7 @@ FINDINDEX=1;
 function prevCheck {
 	# Make sure we're running as root
 	if (( `$ID -u` != 0 )); then
-		{ $ECHO "This scripts must be run as root.  Exiting..."; exit; }
+		{ $ECHO "This script must be run as root.  Exiting..."; exit; }
 	fi
 
 	# Check if the user has specified the folder to backup
