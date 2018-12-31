@@ -325,7 +325,7 @@ function doTheBackup {
 
 	# Echo an end message because why not.
 
-	$ECHO "$BACKUP_FOLDER was backed up into $NEXT_BACKUP"
+	$ECHO "$SOURCE_FOLDER was backed up into $NEXT_BACKUP"
 
     
 }
