@@ -215,13 +215,13 @@ function getShaSums {
 function transferTree {
 
     if [ "$this_is_the_first" = true ]; then
-	$ECHO "This is your first backup, you don't have a previous tree to transfer from."
-	return;
+		$ECHO "This is your first backup, you don't have a previous tree to transfer from."
+		return -1;
     fi
     
     if [ ! -e "$NEW_LOCATIONS" ]; then
-	$ECHO "You have to generate the SHA512 sum filelist first!"
-        return;
+		$ECHO "You have to generate the SHA512 sum filelist first!"
+        return -1;
     fi
 
     # Make hardlinked copy of previous backup.
@@ -236,12 +236,13 @@ function transferTree {
 function updateTree {
 
     if [ "$this_is_the_first" = true ]; then
-	return;
+		$ECHO "This is the first backup. So the tree doesn't need to be updated"
+		return -1;
     fi
 
 	if [ ! -e "$NEXT_CONTENTS" ]; then
 	    $ECHO "You have to transfer the tree first!"
-	    return;
+	    return -1;
 	fi
 
 	# If some file has been renamed, rename the hardlink to the new location
@@ -355,8 +356,9 @@ function mainMenu {
 			getShaSums;
 			;;
 		"Transfer backup tree")
-		    transferTree;
-		    updateTree;
+		    if transferTree; then
+			    updateTree;
+			fi
 			;;
 		"Quit")
 			$ECHO "Exiting..."
