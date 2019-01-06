@@ -2,28 +2,46 @@
 
 ## Overview
 
-TimeVault is a backup script written in bash, that takes advantage of a particularity of the EXT4 format to make incremental timestamped backups rather than copying the whole thing again.
+TimeVault is a script written in bash, that makes incremental backups "a la Apple's Time Machine", but for linux: It generates timestamped snapshots that only store changed files, saving space.
+
+When executed, it creates a folder whose name will be the date of the snapshot. e.g: the 4th of May of 2017, at 16:20, will generate a folder called 20170504_1620. And inside, your contents.
 
 Simplified usage:
 
 ```
-./timeVault.sh <source folder> <destination folder>
+./timeVault.sh source_folder backup_folder
 ```
 
 and then hit the 4th option "Perform a Complete Cycle", and let it sit for a long while.
 
+The backup is stored with this folder structure:
+
+```
+/backup_folder
+-20170101_0438
+	-Contents
+    	-...
+    -fileindex.txt
+-20170504_1620
+	-Contents
+    	-...
+    -fileindex.txt
+...
+-backup_excludes
+```
+
+The files are stored inside the "Contents" folder.
+
 ### Requirements
 
-* The destination folder must be contained in a volume formated in EXT4 format.
-* The destination folder must be writtable by the user.
+* The destination folder must be contained in a volume formated in the EXT4 filesystem.
+* The destination folder must be writable by the user.
 
 ## Disclaimer
 
 **Use at your own risk. I take no responsibility from any loss or data, or any kind of damage or negative consequence derived from the use of this script.** That being said, I hope this script is useful to back up your stuff.
 
 ## Description
-
-
 
 TimeVault is based on the scripts presented in [this article by Mike Rubel](http://www.mikerubel.org/computers/rsync_snapshots/). These make use of the ```rsync``` and ```cp``` commands to make copies of the same folder, with the unchanged files linked to the previous backup.
 
@@ -50,11 +68,27 @@ TimeVault does just that. When it detects that a file hasn't changed, it just ma
 	1. Transfer the old file tree from the previous backup, by making hard linked copy of it. It uses ```cp -al```
 	2. Modify the transferred tree until it looks like the new one, comparing the checksum file of the previous backup to the checksum file of the new; detecting renames and moves.
 3. Execute ```rsync --delete```, to transfer the new files, and delete those that no longer exist.
-4. Name the backup folder with the timestamp, and store the checksum file there.
+4. Name the backup folder with the timestamp, store the checksum file there, and protect the folder against writing.
 
 ## Reasonably askable questions (RAQ)
 
-* Isn't making a checksum of one and every file of the disk a bit like just reading the whole disk and looking at the differences?
-	* Yes. This may seem like bruteforcing my way through the backup, because it is exactly that. However, as a first approach it seems like a good option, and controlling the changes in the files is a task you cannot really avoid. If the checksum step were made by a background process at the time you modify a file, the backup process would be lighter.
+* Why does it take so long?
+	* Making a checksum of one and every file of the disk is like just reading the whole disk and looking at the differences. This seems like bruteforcing, but as a first approach it seems like a good option and controlling the changes in the files is a task you cannot really avoid. If the checksum step were made by a background process at the time you modify a file, the backup process would be lighter, but it would need to be well integrated in the operating system.
 * Can I backup a whole operating system with this script?
-	* I don't think so. An operating system may need to be stored in a particular filesystem to be functional. TimeVault is for data only.
+	* I don't think so. An operating system may need to be stored in a particular filesystem to be functional. TimeVault is intended for data only.
+* I can't delete a backup, I have no permissions!
+	* TimeVault unsets the writing permissions to prevent accidental deletion of the backups. You can restore those permissions by using ```chown 755``` but you may need admin permissions.
+
+## Credits
+
+* [Apple Inc.](https://www.apple.com/) for setting the main concept with [Time Machine][TimeLink].
+* [Mike Rubel](http://www.mikerubel.org/) for inspiring this script with [his article](http://www.mikerubel.org/computers/rsync_snapshots/).
+
+Thank you
+
+## License
+
+Copyright © Jaime García Villena 2017
+License GNU General Public License v2.
+
+[TimeLink]: https://en.wikipedia.org/wiki/Time_Machine_(macOS)
