@@ -6,13 +6,17 @@ TimeVault is a script written in bash, that makes incremental backups "a la Appl
 
 When executed, it creates a folder whose name will be the date of the snapshot. e.g: the 4th of May of 2017, at 16:20, will generate a folder called 20170504_1620. And inside, your contents.
 
-Simplified usage:
+### Simplified usage
+
+Call the script in your terminal like this:
 
 ```
 ./timeVault.sh source_folder backup_folder
 ```
 
 and then hit the 4th option "Perform a Complete Cycle", and let it sit for a long while.
+
+It will work better if the links to source_folder and backup_folder are absolute.
 
 The backup is stored with this folder structure:
 
