@@ -93,6 +93,7 @@ Thank you
 ## License
 
 Copyright © Jaime García Villena 2017
+
 License GNU General Public License v2.
 
 [TimeLink]: https://en.wikipedia.org/wiki/Time_Machine_(macOS)
