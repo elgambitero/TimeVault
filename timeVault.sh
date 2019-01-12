@@ -73,9 +73,10 @@ eval ${COMMANDS[*]};
 # and tail aren't available. 
 # But, what are the odds? am I right?
 
+$ECHO "Checking availability of commands..."
 
 for i in ${COMMANDS[*]}; do
-    $ECHO "Checking $i...";
+    # $ECHO "Checking $i...";
     VARIABLE=$($ECHO $i | $CUT -f1 -d "=");
     CMDLOCATION=$($ECHO ${i##*=});
     if [ ! -e $CMDLOCATION ]; then
@@ -92,7 +93,7 @@ for i in ${COMMANDS[*]}; do
             eval $REASSIGN;
         fi
     fi
-    $ECHO "ok";
+    # $ECHO "ok";
 done 
 
 #-----------------------------------------------------------------------
@@ -128,14 +129,14 @@ function prevCheck {
 	# Check if the user has specified the folder to backup
 	if [ -z "$1" ]; then
 	    $ECHO "You must specify the folder to backup";
-	    $ECHO "Syntax is: makeBackup.sh <source folder> <destination folder>"
+	    $ECHO "Syntax is: ./timeVault.sh <source folder> <destination folder>"
 	    exit;
 	fi
 
 	# Check if the user has specified the folder to backup
 	if [ -z "$2" ]; then
 	    $ECHO "You must specify the folder to make the backup into";
-	    $ECHO "Syntax is: timeVault.sh <source folder> <destination folder>"
+	    $ECHO "Syntax is: ./timeVault.sh <source folder> <destination folder>"
 	    exit;
 	fi
 
@@ -174,7 +175,7 @@ function startUp {
 	PREVIOUS_BACKUP=${PRV%/};
 	PREVIOUS_CONTENTS=${PRV/};
 	OLD_LOCATIONS="";
-	$ECHO "No previous backup found. Assuming this is your first backup.";
+	$ECHO "NO PREVIOUS BACKUPS FOUND. Assuming this is your first backup.";
 	NEXT_BACKUP=$BACKUP_FOLDER/$($DATE +%Y%m%d_%H%M);
 	NEXT_CONTENTS=$NEXT_BACKUP/Contents;
 	NEW_LOCATIONS=$BACKUP_FOLDER/fileindex.txt;	
@@ -189,8 +190,9 @@ function startUp {
 	NEW_LOCATIONS=$BACKUP_FOLDER/fileindex.txt;
 	
 	if [ ! -e "$PREVIOUS_BACKUP/fileindex.txt" ]; then
-	    $ECHO "Previous backup $PREVIOUS_BACKUP wasn't performed. Marking as error...";
+	    $ECHO "Previous backup $PREVIOUS_BACKUP wasn't performed properly. Marking as error...";
 	    $ECHO "You are free to delete that snapshot when you feel safe";
+		$ECHO "TimeVault will make the backup linked to the backup previous of that.";
 	    $MV "$PREVIOUS_BACKUP" "$BACKUP_FOLDER"/"ERROR""${PRV#$($ECHO "$BACKUP_FOLDER""/")}";
             if [ -e $NEW_LOCATIONS ]; then
                 $RM "$NEW_LOCATIONS" &> /dev/null;
@@ -208,7 +210,7 @@ function startUp {
 
 
 function getShaSums {
-    $ECHO "Get SHA512sums for the new directory...";
+    $ECHO "Get SHA512sums for the new directory... This may take a while.";
     # Search all the files in the new tree, get their SHA512 sums,
     # and get them into the NEW_LOCATIONS file.
     $FIND "$SOURCE_FOLDER" -type f -exec $ECHO -n '"{}" ' \; | $TR '\n' ' ' | $XARGS $SHA512 | $GREP -vf $EXCLUDES > $NEW_LOCATIONS;
@@ -367,9 +369,9 @@ function doTheBackup {
 
 
 function mainMenu {
-	# $CLEAR # Clear terminal screen.
-
-	PS3="gvJaime's back up utility. Select an option to continue:";
+	$CLEAR # Clear terminal screen.
+	$ECHO "Welcome to TimeVault!!!"
+	PS3="Select an option to continue:";
 
 	OPTIONS="\"Generate sha512 sums for backup\" \"Transfer backup tree\" \"Transfer new files\" \"Perform a complete cycle\" \"Perform cycle without checksums\" \"Quit\"";
 	eval set $OPTIONS;
