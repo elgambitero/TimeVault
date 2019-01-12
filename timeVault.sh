@@ -73,6 +73,8 @@ eval ${COMMANDS[*]};
 # and tail aren't available. 
 # But, what are the odds? am I right?
 
+
+
 $ECHO "Checking availability of commands..."
 
 for i in ${COMMANDS[*]}; do
@@ -199,6 +201,7 @@ function startUp {
             fi
 	    FINDINDEX=$(($FINDINDEX + 1));
 	    startUp;
+		return;
 	else
 	    PREVIOUS_BACKUP=$PRV;
 	    PREVIOUS_CONTENTS=$PREVIOUS_BACKUP/Contents;
@@ -369,10 +372,8 @@ function doTheBackup {
 
 
 function mainMenu {
-	$CLEAR # Clear terminal screen.
-	$ECHO "Welcome to TimeVault!!!"
-	PS3="Select an option to continue:";
 
+	PS3="Select an option to continue:";
 	OPTIONS="\"Generate sha512 sums for backup\" \"Transfer backup tree\" \"Transfer new files\" \"Perform a complete cycle\" \"Perform cycle without checksums\" \"Quit\"";
 	eval set $OPTIONS;
 	select opt in "$@"; do
@@ -410,6 +411,8 @@ function mainMenu {
 	done
 }
 
+$CLEAR # Clear terminal screen.
+$ECHO "Welcome to TimeVault!!!"
 prevCheck $1 $2;
 startUp;
 mainMenu;
